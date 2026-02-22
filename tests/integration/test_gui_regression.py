@@ -1,11 +1,11 @@
-import os
+import importlib
 from typing import Any
 
-os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+import pytest
 
-from PyQt6.QtWidgets import QApplication
-
-from research_signal_nlp.gui import app as gui_app
+q_widgets = pytest.importorskip("PyQt6.QtWidgets")
+QApplication = q_widgets.QApplication
+gui_app = importlib.import_module("research_signal_nlp.gui.app")
 
 _APP = QApplication.instance() or QApplication([])
 

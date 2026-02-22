@@ -13,7 +13,6 @@ from research_signal_nlp.core.services import (
     run_report,
     run_signal_build,
 )
-from research_signal_nlp.gui.app import run_gui
 
 app = typer.Typer(help="research-signal-nlp command line")
 backtest_app = typer.Typer(help="Backtest commands")
@@ -84,6 +83,12 @@ def report_command(
 @app.command("gui")
 def gui_command() -> None:
     """Launch PyQt6 research workstation."""
+
+    try:
+        from research_signal_nlp.gui.app import run_gui
+    except ImportError as exc:
+        print(f"[red]GUI dependencies are unavailable: {exc}[/red]")
+        raise typer.Exit(code=1) from exc
 
     run_gui()
 

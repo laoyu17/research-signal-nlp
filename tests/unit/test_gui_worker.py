@@ -1,12 +1,15 @@
-import os
 import time
 
-os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-
-from PyQt6.QtCore import QEventLoop, QThread, QTimer
-from PyQt6.QtWidgets import QApplication
+import pytest
 
 from research_signal_nlp.gui.worker import TaskRunner, WorkerSignals
+
+q_core = pytest.importorskip("PyQt6.QtCore")
+q_widgets = pytest.importorskip("PyQt6.QtWidgets")
+QEventLoop = q_core.QEventLoop
+QTimer = q_core.QTimer
+QThread = q_core.QThread
+QApplication = q_widgets.QApplication
 
 _APP = QApplication.instance() or QApplication([])
 
@@ -61,7 +64,12 @@ def _wait_for_cleanup(runner: TaskRunner, timeout_sec: float = 1.0) -> None:
 
 def test_task_runner_emits_finished_and_cleans_up_job_refs() -> None:
     _ensure_app()
-    runner = TaskRunner(lambda value: value + 1)
+
+    def _slow_add(value: int) -> int:
+        time.sleep(0.05)
+        return value + 1
+
+    runner = TaskRunner(_slow_add)
     thread, signals = runner.run(41)
     state = _wait_for_task_result(thread, signals)
     _wait_for_cleanup(runner)
@@ -75,6 +83,7 @@ def test_task_runner_emits_failed_and_cleans_up_job_refs() -> None:
     _ensure_app()
 
     def _raise_runtime_error() -> None:
+        time.sleep(0.05)
         raise RuntimeError("boom")
 
     runner = TaskRunner(_raise_runtime_error)

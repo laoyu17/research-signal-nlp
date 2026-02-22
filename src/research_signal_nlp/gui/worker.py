@@ -6,7 +6,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
-from PyQt6.QtCore import QCoreApplication, QObject, QThread, QTimer, pyqtSignal
+from PyQt6.QtCore import QObject, QThread, pyqtSignal
 
 
 class WorkerSignals(QObject):
@@ -64,9 +64,5 @@ class TaskRunner:
 
         thread.finished.connect(_cleanup)
         thread.started.connect(task.start)
-        # Delay thread start to let caller connect signals first when event loop is available.
-        if QCoreApplication.instance() is not None:
-            QTimer.singleShot(0, thread.start)
-        else:
-            thread.start()
+        thread.start()
         return thread, signals
