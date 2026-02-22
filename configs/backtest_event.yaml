@@ -1,0 +1,5 @@
+events_path: artifacts/events.parquet
+returns_path: examples/data/returns_sample.csv
+returns_format: csv
+output_path: artifacts/event_metrics.json
+windows: [1, 3, 5]

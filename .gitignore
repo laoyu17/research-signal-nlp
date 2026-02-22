@@ -1,0 +1,26 @@
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+.env
+*.log
+.DS_Store
+.idea/
+.vscode/
+
+# Data artifacts
+data/raw/
+data/processed/
+artifacts/
+reports/
+*.parquet
+
+# Qt
+*.qrc

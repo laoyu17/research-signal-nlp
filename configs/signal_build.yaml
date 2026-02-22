@@ -1,0 +1,36 @@
+ingested_records_path: artifacts/text_records.parquet
+data_source:
+  path: examples/data/text_sample.csv
+  format: csv
+  mapping:
+    id_field: id
+    asset_field: asset
+    publish_time_field: publish_time
+    source_field: source
+    title_field: title
+    body_field: body
+  timezone: Asia/Shanghai
+  deduplicate_by: [id]
+output_path: artifacts/signal_scores.parquet
+events_output_path: artifacts/events.parquet
+debug_output_path: artifacts/signal_debug.parquet
+train_label_path: examples/data/label_sample.csv
+text_concat_fields: [title, body]
+lexicon:
+  positive_words: [上调, 买入, 增长, 改善, 业绩预增, 目标价上调]
+  negative_words: [下调, 卖出, 下降, 亏损, 风险, 风险提示]
+event_patterns:
+  rating_upgrade_patterns: ["上调.*评级", "维持.*买入", "首次覆盖.*买入"]
+  target_up_patterns: ["目标价.*上调", "提高目标价"]
+  earnings_positive_patterns: ["业绩预增", "净利润同比增长"]
+model:
+  enabled: true
+  model_type: logistic
+  min_df: 1
+  max_features: 3000
+weights:
+  lexicon: 0.4
+  event: 0.3
+  model: 0.3
+signal_name: nlp_fusion_v1
+signal_version: 0.1.0

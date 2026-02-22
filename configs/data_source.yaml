@@ -1,0 +1,12 @@
+path: examples/data/text_sample.csv
+format: csv
+mapping:
+  id_field: id
+  asset_field: asset
+  publish_time_field: publish_time
+  source_field: source
+  title_field: title
+  body_field: body
+timezone: Asia/Shanghai
+deduplicate_by:
+  - id

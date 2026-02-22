@@ -1,0 +1,60 @@
+[build-system]
+requires = ["hatchling>=1.24.2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "research-signal-nlp"
+version = "0.1.0"
+description = "Text-signal factor research framework for quant internships"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+  { name = "laoyu17" }
+]
+dependencies = [
+  "numpy>=1.26",
+  "pandas>=2.2",
+  "scipy>=1.12",
+  "scikit-learn>=1.4",
+  "pydantic>=2.8",
+  "PyYAML>=6.0",
+  "typer>=0.12",
+  "rich>=13.7",
+  "matplotlib>=3.8",
+  "seaborn>=0.13",
+  "jinja2>=3.1",
+  "pyarrow>=16.1",
+  "PyQt6>=6.7",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.2",
+  "pytest-cov>=5.0",
+  "ruff>=0.5",
+  "mypy>=1.10",
+]
+
+[project.scripts]
+rsnlp = "research_signal_nlp.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/research_signal_nlp"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "N"]
+ignore = ["B008"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+addopts = "-q"
+
+[tool.mypy]
+python_version = "3.11"
+strict = false
+ignore_missing_imports = true

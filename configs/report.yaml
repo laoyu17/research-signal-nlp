@@ -1,0 +1,4 @@
+run_name: sample_run
+output_path: reports/sample_report.html
+cs_metrics_path: artifacts/cs_metrics.json
+event_metrics_path: artifacts/event_metrics.json

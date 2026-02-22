@@ -1,0 +1,5 @@
+score_path: artifacts/signal_scores.parquet
+returns_path: examples/data/returns_sample.csv
+returns_format: csv
+output_path: artifacts/cs_metrics.json
+quantiles: 5
