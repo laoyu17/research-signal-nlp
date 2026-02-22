@@ -83,11 +83,17 @@ docs/
 ## 信号输入模式
 - 直接读取原始文本：配置 `data_source`
 - 接 ingest 标准化产物：配置 `ingested_records_path`（优先）
+- 当使用 `ingested_records_path` 时，`trade_date` 必须可解析为合法日期；若仅提供 `publish_time`，会自动回退生成 `trade_date`
 
 ## 信号输出路径配置（可选）
 - `output_path`：主因子输出
 - `events_output_path`：事件明细输出（默认与 `output_path` 同目录，文件名 `events.parquet`）
 - `debug_output_path`：调试特征输出（默认与 `output_path` 同目录，文件名 `signal_debug.parquet`）
+
+## 报告输入严格模式（可选）
+- `strict_inputs`（`configs/report.yaml`）：默认 `false`
+- `strict_inputs=false`：缺失指标文件时允许生成空报告（兼容旧行为）
+- `strict_inputs=true`：缺失 `cs_metrics`/`event_metrics` 文件或 payload 缺少 `metrics` 字段时直接失败（建议 CI 使用）
 
 ## 指标口径说明
 - 事件研究 CAR 使用 `T+1...T+N`（不包含事件当日）。

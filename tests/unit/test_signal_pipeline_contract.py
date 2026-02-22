@@ -117,3 +117,27 @@ def test_signal_pipeline_rejects_ingested_records_with_invalid_trade_date(tmp_pa
 
     with pytest.raises(ValueError, match="invalid or missing trade_date"):
         build_signal_scores(cfg)
+
+
+def test_signal_pipeline_rejects_existing_trade_date_with_invalid_value(tmp_path: Path) -> None:
+    ingested_path = tmp_path / "records.csv"
+    pd.DataFrame(
+        {
+            "id": ["id_1", "id_2"],
+            "asset": ["A", "B"],
+            "source": ["news", "news"],
+            "title": ["上调评级", "风险提示"],
+            "body": ["公司增长稳健", "存在亏损风险"],
+            "trade_date": ["2025-01-01", "bad-date"],
+        }
+    ).to_csv(ingested_path, index=False)
+
+    cfg = SignalBuildConfig.model_validate(
+        {
+            "ingested_records_path": str(ingested_path),
+            "model": {"enabled": False},
+        }
+    )
+
+    with pytest.raises(ValueError, match="invalid or missing trade_date"):
+        build_signal_scores(cfg)

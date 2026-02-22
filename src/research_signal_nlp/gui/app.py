@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -43,13 +44,30 @@ from .worker import TaskRunner
 class BaseTaskTab(QWidget):
     def __init__(self) -> None:
         super().__init__()
-        self._active_threads: list[object] = []
+        self._active_runners: list[TaskRunner] = []
 
     def _handle_done(self, message: str) -> None:
         QMessageBox.information(self, "任务完成", message)
 
     def _handle_error(self, error: str) -> None:
         QMessageBox.critical(self, "任务失败", error)
+
+    def _start_task(self, fn: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
+        runner = TaskRunner(fn)
+        thread, signals = runner.run(*args, **kwargs)
+        self._active_runners.append(runner)
+
+        def _cleanup_runner() -> None:
+            self._active_runners = [
+                active for active in self._active_runners if active is not runner
+            ]
+
+        finished_signal = getattr(thread, "finished", None)
+        if finished_signal is not None and hasattr(finished_signal, "connect"):
+            finished_signal.connect(_cleanup_runner)
+        else:
+            _cleanup_runner()
+        return signals
 
 
 class DataManagerTab(BaseTaskTab):
@@ -134,9 +152,7 @@ class DataManagerTab(BaseTaskTab):
         self.ingest_progress.setVisible(True)
         self.ingest_log.append(f"[RUN] ingest with config={config} output={output}")
 
-        runner = TaskRunner(run_ingest)
-        thread, signals = runner.run(config, output)
-        self._active_threads.append(thread)
+        signals = self._start_task(run_ingest, config, output)
 
         def finished(result: Any) -> None:
             self.ingest_progress.setVisible(False)
@@ -227,9 +243,7 @@ class SignalWorkshopTab(BaseTaskTab):
         self.progress.setVisible(True)
         self.log.append(f"[RUN] build-signal with {config}")
 
-        runner = TaskRunner(run_signal_build)
-        thread, signals = runner.run(config)
-        self._active_threads.append(thread)
+        signals = self._start_task(run_signal_build, config)
 
         def finished(result: Any) -> None:
             self.progress.setVisible(False)
@@ -281,9 +295,7 @@ class ExperimentCenterTab(BaseTaskTab):
         self.progress.setVisible(True)
         self.log.append(f"[RUN] {tag} with {config}")
 
-        runner = TaskRunner(fn)
-        thread, signals = runner.run(config)
-        self._active_threads.append(thread)
+        signals = self._start_task(fn, config)
 
         def finished(result: Any) -> None:
             self.progress.setVisible(False)
@@ -399,9 +411,13 @@ class EvaluationBoardTab(BaseTaskTab):
         self.gate_progress.setVisible(True)
         self.gate_result.setText("门禁运行中...")
 
-        runner = TaskRunner(run_regression_check)
-        thread, signals = runner.run(baseline, current, ic_threshold, ls_threshold)
-        self._active_threads.append(thread)
+        signals = self._start_task(
+            run_regression_check,
+            baseline,
+            current,
+            ic_threshold,
+            ls_threshold,
+        )
 
         def finished(result: Any) -> None:
             self.gate_progress.setVisible(False)
@@ -454,9 +470,7 @@ class ReportCenterTab(BaseTaskTab):
         self.progress.setRange(0, 0)
         self.progress.setVisible(True)
 
-        runner = TaskRunner(run_report)
-        thread, signals = runner.run(config)
-        self._active_threads.append(thread)
+        signals = self._start_task(run_report, config)
 
         def finished(result: Any) -> None:
             self.progress.setVisible(False)

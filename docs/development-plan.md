@@ -6,6 +6,7 @@
 - 可选增强（Transformer / 行业风格中性化 / 多数据源适配）尚未启动
 - 本轮新增：GUI ingest 入口、GUI 回归门禁入口、信号输出路径可配置、事件诊断标记
 - 本轮新增：重构 `examples/data/text_sample.csv` 让三类事件天然可分，并刷新 `tests/baseline/cs_metrics_baseline.json`
+- 本轮新增：`ingested_records_path` 的 `trade_date` 严格校验、GUI 任务生命周期统一托管、报告 `strict_inputs` 模式
 
 ## Phase 1 - 基础设施
 - 建立仓库结构与打包

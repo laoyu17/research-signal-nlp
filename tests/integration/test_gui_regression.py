@@ -79,6 +79,32 @@ def test_data_manager_tab_runs_ingest_and_updates_preview_path(monkeypatch: Any)
     assert "[DONE]" in tab.ingest_log.toPlainText()
 
 
+def test_data_manager_tab_cleans_runner_refs_after_repeated_ingest(monkeypatch: Any) -> None:
+    _ensure_app()
+    monkeypatch.setattr(gui_app, "TaskRunner", _ImmediateTaskRunner)
+    monkeypatch.setattr(
+        gui_app,
+        "run_ingest",
+        lambda config, output: {
+            "output_path": output,
+            "records_before": 12,
+            "records_after": 10,
+        },
+    )
+
+    tab = gui_app.DataManagerTab()
+    monkeypatch.setattr(tab, "_load", lambda: None)
+    monkeypatch.setattr(tab, "_handle_done", lambda message: None)
+
+    tab.ingest_config_input.setText("configs/data_source.yaml")
+    tab.ingest_output_input.setText("artifacts/from_gui.parquet")
+
+    for _ in range(6):
+        tab._run_ingest()
+
+    assert tab._active_runners == []
+
+
 def test_evaluation_board_tab_runs_regression_gate(monkeypatch: Any) -> None:
     _ensure_app()
     monkeypatch.setattr(gui_app, "TaskRunner", _ImmediateTaskRunner)

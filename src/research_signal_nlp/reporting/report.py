@@ -91,11 +91,15 @@ REPORT_TEMPLATE = """
 """
 
 
-def _load_payload(path: str | None) -> dict | None:
+def _load_payload(path: str | None, *, name: str, strict: bool) -> dict | None:
     if not path:
+        if strict:
+            raise ValueError(f"{name} path is required when strict_inputs=true.")
         return None
     target = Path(path)
     if not target.exists():
+        if strict:
+            raise FileNotFoundError(f"{name} file not found: {path}")
         return None
     return read_json(target)
 
@@ -105,8 +109,28 @@ def build_html_report(
     cs_payload: dict | None = None,
     event_payload: dict | None = None,
 ) -> str:
-    cs_payload = cs_payload or _load_payload(config.cs_metrics_path)
-    event_payload = event_payload or _load_payload(config.event_metrics_path)
+    if cs_payload is None:
+        cs_payload = _load_payload(
+            config.cs_metrics_path,
+            name="cs_metrics",
+            strict=config.strict_inputs,
+        )
+    if event_payload is None:
+        event_payload = _load_payload(
+            config.event_metrics_path,
+            name="event_metrics",
+            strict=config.strict_inputs,
+        )
+
+    if config.strict_inputs:
+        if cs_payload is None or "metrics" not in cs_payload:
+            raise ValueError(
+                "Strict report mode requires a CS metrics payload with a 'metrics' field."
+            )
+        if event_payload is None or "metrics" not in event_payload:
+            raise ValueError(
+                "Strict report mode requires an event metrics payload with a 'metrics' field."
+            )
 
     output_path = Path(config.output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
