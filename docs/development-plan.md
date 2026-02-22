@@ -7,6 +7,14 @@
 - 本轮新增：GUI ingest 入口、GUI 回归门禁入口、信号输出路径可配置、事件诊断标记
 - 本轮新增：重构 `examples/data/text_sample.csv` 让三类事件天然可分，并刷新 `tests/baseline/cs_metrics_baseline.json`
 - 本轮新增：`ingested_records_path` 的 `trade_date` 严格校验、GUI 任务生命周期统一托管、报告 `strict_inputs` 模式
+- 本轮新增：服务层/报告层 `CSPayload` 与 `EventPayload` 契约校验、实验中心任务完成反馈统一、空数据图表不再触发 legend 告警
+
+## 状态证据（可追溯）
+- 需求实现矩阵：`docs/implementation-status.md`
+- CLI 与服务编排：`src/research_signal_nlp/cli.py`、`src/research_signal_nlp/core/services.py`
+- 契约模型：`src/research_signal_nlp/data/schema.py`
+- 报告严格输入策略：`src/research_signal_nlp/reporting/report.py`
+- 关键回归：`tests/unit`、`tests/integration`、`tests/e2e`
 
 ## Phase 1 - 基础设施
 - 建立仓库结构与打包

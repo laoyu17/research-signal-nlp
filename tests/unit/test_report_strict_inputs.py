@@ -1,4 +1,5 @@
 import json
+import warnings
 from pathlib import Path
 
 import pytest
@@ -56,8 +57,28 @@ def test_build_html_report_rejects_missing_metrics_field_in_strict_mode(tmp_path
         strict_inputs=True,
     )
 
-    with pytest.raises(ValueError, match="CS metrics payload"):
+    with pytest.raises(ValueError, match="cs_metrics payload schema validation failed"):
         build_html_report(cfg)
+
+
+def test_build_html_report_drops_invalid_payload_in_compat_mode(tmp_path: Path) -> None:
+    cs_path = tmp_path / "cs_metrics.json"
+    event_path = tmp_path / "event_metrics.json"
+    _write_json(cs_path, {"metrics": {"ic_mean": "oops"}})
+    _write_json(event_path, {"metrics": [{"event_type": "rating_upgrade", "window": "bad"}]})
+
+    cfg = ReportConfig(
+        run_name="compat-invalid",
+        output_path=str(tmp_path / "report.html"),
+        cs_metrics_path=str(cs_path),
+        event_metrics_path=str(event_path),
+        strict_inputs=False,
+    )
+
+    report_path = build_html_report(cfg)
+    html = Path(report_path).read_text(encoding="utf-8")
+    assert "无横截面结果" in html
+    assert "无事件研究结果" in html
 
 
 def test_build_html_report_succeeds_with_valid_files_in_strict_mode(tmp_path: Path) -> None:
@@ -87,5 +108,12 @@ def test_build_html_report_succeeds_with_valid_files_in_strict_mode(tmp_path: Pa
         strict_inputs=True,
     )
 
-    report_path = build_html_report(cfg)
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        report_path = build_html_report(cfg)
+
+    has_legend_warning = any(
+        "No artists with labels found to put in legend" in str(w.message) for w in caught
+    )
+    assert not has_legend_warning
     assert Path(report_path).exists()

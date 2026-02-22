@@ -30,7 +30,8 @@ def save_ic_chart(daily_ic: pd.DataFrame, out_dir: Path) -> str:
     ax.set_title("Daily IC")
     ax.set_xlabel("Date")
     ax.set_ylabel("IC")
-    ax.legend()
+    if not daily_ic.empty:
+        ax.legend()
     fig.tight_layout()
     fig.savefig(out_path, dpi=150)
     plt.close(fig)
@@ -51,7 +52,8 @@ def save_ls_chart(daily_ls: pd.DataFrame, out_dir: Path) -> str:
     ax.set_title("Long-Short Cumulative Return")
     ax.set_xlabel("Date")
     ax.set_ylabel("Cumulative Return")
-    ax.legend()
+    if not daily_ls.empty:
+        ax.legend()
     fig.tight_layout()
     fig.savefig(out_path, dpi=150)
     plt.close(fig)

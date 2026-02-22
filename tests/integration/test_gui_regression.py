@@ -105,6 +105,27 @@ def test_data_manager_tab_cleans_runner_refs_after_repeated_ingest(monkeypatch: 
     assert tab._active_runners == []
 
 
+def test_experiment_center_tab_reports_task_completion(monkeypatch: Any) -> None:
+    _ensure_app()
+    monkeypatch.setattr(gui_app, "TaskRunner", _ImmediateTaskRunner)
+    monkeypatch.setattr(
+        gui_app,
+        "run_cs_backtest",
+        lambda config: {"output_path": "artifacts/cs_metrics.json"},
+    )
+
+    tab = gui_app.ExperimentCenterTab()
+    done_calls: list[str] = []
+    monkeypatch.setattr(tab, "_handle_done", lambda message: done_calls.append(message))
+
+    tab.cs_config.setText("configs/backtest_cs.yaml")
+    tab._run_cs()
+
+    assert done_calls
+    assert "cs-backtest 完成" in done_calls[0]
+    assert "[DONE] cs-backtest" in tab.log.toPlainText()
+
+
 def test_evaluation_board_tab_runs_regression_gate(monkeypatch: Any) -> None:
     _ensure_app()
     monkeypatch.setattr(gui_app, "TaskRunner", _ImmediateTaskRunner)

@@ -93,7 +93,7 @@ docs/
 ## 报告输入严格模式（可选）
 - `strict_inputs`（`configs/report.yaml`）：默认 `false`
 - `strict_inputs=false`：缺失指标文件时允许生成空报告（兼容旧行为）
-- `strict_inputs=true`：缺失 `cs_metrics`/`event_metrics` 文件或 payload 缺少 `metrics` 字段时直接失败（建议 CI 使用）
+- `strict_inputs=true`：缺失 `cs_metrics`/`event_metrics` 文件或 payload 结构不合法时直接失败（建议 CI 使用）
 
 ## 指标口径说明
 - 事件研究 CAR 使用 `T+1...T+N`（不包含事件当日）。
@@ -111,6 +111,7 @@ docs/
 - 需求：`docs/product-requirements.md`
 - 架构：`docs/architecture-design.md`
 - 开发计划：`docs/development-plan.md`
+- 实现状态矩阵：`docs/implementation-status.md`
 - 测试回归：`docs/testing-regression-policy.md`
 - 案例：`docs/case-study-01.md`
 - 面试亮点：`docs/interview-highlights.md`

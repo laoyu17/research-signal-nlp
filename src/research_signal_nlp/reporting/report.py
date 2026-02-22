@@ -6,8 +6,10 @@ from pathlib import Path
 
 import pandas as pd
 from jinja2 import Template
+from pydantic import BaseModel, ValidationError
 
 from research_signal_nlp.core.config import ReportConfig
+from research_signal_nlp.data.schema import CSPayload, EventPayload
 from research_signal_nlp.utils.io import read_json
 
 from .charts import save_event_chart, save_ic_chart, save_ls_chart
@@ -104,6 +106,23 @@ def _load_payload(path: str | None, *, name: str, strict: bool) -> dict | None:
     return read_json(target)
 
 
+def _validate_loaded_payload(
+    payload: dict | None,
+    *,
+    name: str,
+    model_cls: type[BaseModel],
+    strict: bool,
+) -> dict | None:
+    if payload is None:
+        return None
+    try:
+        return model_cls.model_validate(payload).model_dump()
+    except ValidationError as exc:
+        if strict:
+            raise ValueError(f"{name} payload schema validation failed: {exc}") from exc
+        return None
+
+
 def build_html_report(
     config: ReportConfig,
     cs_payload: dict | None = None,
@@ -122,15 +141,24 @@ def build_html_report(
             strict=config.strict_inputs,
         )
 
+    cs_payload = _validate_loaded_payload(
+        cs_payload,
+        name="cs_metrics",
+        model_cls=CSPayload,
+        strict=config.strict_inputs,
+    )
+    event_payload = _validate_loaded_payload(
+        event_payload,
+        name="event_metrics",
+        model_cls=EventPayload,
+        strict=config.strict_inputs,
+    )
+
     if config.strict_inputs:
-        if cs_payload is None or "metrics" not in cs_payload:
-            raise ValueError(
-                "Strict report mode requires a CS metrics payload with a 'metrics' field."
-            )
-        if event_payload is None or "metrics" not in event_payload:
-            raise ValueError(
-                "Strict report mode requires an event metrics payload with a 'metrics' field."
-            )
+        if cs_payload is None:
+            raise ValueError("Strict report mode requires a valid CS metrics payload.")
+        if event_payload is None:
+            raise ValueError("Strict report mode requires a valid event metrics payload.")
 
     output_path = Path(config.output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)

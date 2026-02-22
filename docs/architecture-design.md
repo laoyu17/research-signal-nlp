@@ -19,6 +19,7 @@
 - `EventDiagnostics`: event_type_count/full_overlap_event_types
 - `CSPayload`: metrics + daily_ic + daily_ls
 - `EventPayload`: metrics + event_details + diagnostics
+- `CSPayload` / `EventPayload` 在服务层写出前与报告层读取时均进行 Pydantic 契约校验（兼容模式下可降级为空结果）
 
 ## 3. 主流程
 1. Ingest 标准化文本数据（含 timezone 对齐与 trade_date 生成）
@@ -27,8 +28,9 @@
 4. 权重融合 + 按日截面 z-score 标准化
 5. 写出信号产物（`signal_scores` + `events` + `signal_debug`，其中后两者支持自定义输出路径）
 6. 横截面与事件研究评估
-7. 产出 JSON 指标与 HTML 报告
-8. 使用回归门禁校验 `ΔIC` 与 `ΔLS`
+7. 服务层对 `CSPayload` / `EventPayload` 做结构校验后落盘 JSON
+8. 报告层读取 payload 并按 `strict_inputs` 执行契约校验（严格模式失败即中断）
+9. 产出 HTML 报告并使用回归门禁校验 `ΔIC` 与 `ΔLS`
 
 ## 4. 接口设计
 ### CLI
@@ -56,7 +58,7 @@
 ### 报告配置补充
 - `ReportConfig.strict_inputs`：默认 `false`
   - `false`：缺失输入时兼容生成空报告
-  - `true`：缺失输入文件或 payload 缺失 `metrics` 字段时 fail-fast
+  - `true`：缺失输入文件或 payload 契约不合法时 fail-fast
 
 ## 5. 指标口径说明
 - 事件窗 CAR 使用 **T+1...T+N**，不包含事件当日（`trade_date > event_date`）。

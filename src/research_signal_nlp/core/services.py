@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from pydantic import BaseModel, ValidationError
+
 from research_signal_nlp.backtest.cross_section import CrossSectionEvaluator
 from research_signal_nlp.backtest.event_study import EventStudyEvaluator
 from research_signal_nlp.core.config import (
@@ -16,9 +18,17 @@ from research_signal_nlp.core.config import (
 )
 from research_signal_nlp.core.regression import check_cs_regression
 from research_signal_nlp.data.ingest import ingest_text_data
+from research_signal_nlp.data.schema import CSPayload, EventPayload
 from research_signal_nlp.reporting.report import build_html_report
 from research_signal_nlp.signals.pipeline import build_signal_scores
 from research_signal_nlp.utils.io import read_table, write_json, write_table
+
+
+def _validate_payload(payload: dict, model_cls: type[BaseModel], payload_name: str) -> dict:
+    try:
+        return model_cls.model_validate(payload).model_dump()
+    except ValidationError as exc:
+        raise ValueError(f"Invalid {payload_name} payload schema: {exc}") from exc
 
 
 def run_ingest(
@@ -65,7 +75,11 @@ def run_cs_backtest(config_path: str) -> dict:
     returns_df = read_table(cfg.returns_path, cfg.returns_format)
 
     evaluator = CrossSectionEvaluator(quantiles=cfg.quantiles)
-    payload = evaluator.evaluate(score_df, returns_df)
+    payload = _validate_payload(
+        evaluator.evaluate(score_df, returns_df),
+        CSPayload,
+        "cs",
+    )
     write_json(payload, cfg.output_path)
     return {"output_path": cfg.output_path, "metrics": payload.get("metrics", {})}
 
@@ -77,7 +91,11 @@ def run_event_backtest(config_path: str) -> dict:
     returns_df = read_table(cfg.returns_path, cfg.returns_format)
 
     evaluator = EventStudyEvaluator(windows=cfg.windows)
-    payload = evaluator.evaluate(events_df, returns_df)
+    payload = _validate_payload(
+        evaluator.evaluate(events_df, returns_df),
+        EventPayload,
+        "event",
+    )
     write_json(payload, cfg.output_path)
     return {"output_path": cfg.output_path, "metric_rows": len(payload.get("metrics", []))}
 

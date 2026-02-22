@@ -300,6 +300,7 @@ class ExperimentCenterTab(BaseTaskTab):
         def finished(result: Any) -> None:
             self.progress.setVisible(False)
             self.log.append(f"[DONE] {tag}: {result}")
+            self._handle_done(f"{tag} 完成\n{result}")
 
         def failed(error: str) -> None:
             self.progress.setVisible(False)
