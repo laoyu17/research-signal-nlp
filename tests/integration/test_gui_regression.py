@@ -1,9 +1,17 @@
 import importlib
+import os
 from typing import Any
 
 import pytest
 
-q_widgets = pytest.importorskip("PyQt6.QtWidgets")
+
+def _import_qwidgets() -> Any:
+    if os.getenv("RSNLP_REQUIRE_GUI_TESTS") == "1":
+        return importlib.import_module("PyQt6.QtWidgets")
+    return pytest.importorskip("PyQt6.QtWidgets")
+
+
+q_widgets = _import_qwidgets()
 QApplication = q_widgets.QApplication
 gui_app = importlib.import_module("research_signal_nlp.gui.app")
 

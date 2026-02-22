@@ -1,11 +1,21 @@
+import importlib
+import os
 import time
+from typing import Any
 
 import pytest
 
 from research_signal_nlp.gui.worker import TaskRunner, WorkerSignals
 
-q_core = pytest.importorskip("PyQt6.QtCore")
-q_widgets = pytest.importorskip("PyQt6.QtWidgets")
+
+def _import_module_or_skip(module_name: str) -> Any:
+    if os.getenv("RSNLP_REQUIRE_GUI_TESTS") == "1":
+        return importlib.import_module(module_name)
+    return pytest.importorskip(module_name)
+
+
+q_core = _import_module_or_skip("PyQt6.QtCore")
+q_widgets = _import_module_or_skip("PyQt6.QtWidgets")
 QEventLoop = q_core.QEventLoop
 QTimer = q_core.QTimer
 QThread = q_core.QThread
