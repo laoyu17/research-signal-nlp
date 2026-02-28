@@ -26,6 +26,52 @@ def test_cross_section_evaluator_outputs_metrics() -> None:
     assert payload["metrics"]["ic_mean"] > 0
 
 
+def test_cross_section_turnover_uses_chronological_trade_date_order() -> None:
+    score_df = pd.DataFrame(
+        {
+            "asset": [
+                "A",
+                "B",
+                "C",
+                "D",
+                "A",
+                "B",
+                "C",
+                "D",
+                "A",
+                "B",
+                "C",
+                "D",
+            ],
+            "trade_date": ["2025-1-2"] * 4 + ["2025-1-3"] * 4 + ["2025-1-10"] * 4,
+            "score": [4, 3, 2, 1, 2, 4, 3, 1, 1, 2, 4, 3],
+        }
+    )
+    returns_df = pd.DataFrame(
+        {
+            "asset": [
+                "A",
+                "B",
+                "C",
+                "D",
+                "A",
+                "B",
+                "C",
+                "D",
+                "A",
+                "B",
+                "C",
+                "D",
+            ],
+            "trade_date": ["2025-1-2"] * 4 + ["2025-1-3"] * 4 + ["2025-1-10"] * 4,
+            "fwd_return": [0.04, 0.03, 0.02, 0.01, 0.02, 0.04, 0.03, 0.01, 0.01, 0.02, 0.04, 0.03],
+        }
+    )
+
+    payload = CrossSectionEvaluator(quantiles=2).evaluate(score_df, returns_df)
+    assert payload["metrics"]["turnover_mean"] == pytest.approx(0.5)
+
+
 def test_event_study_evaluator_outputs_metrics() -> None:
     events_df = pd.DataFrame(
         {

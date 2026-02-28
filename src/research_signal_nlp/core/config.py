@@ -129,6 +129,7 @@ class ReportConfig(BaseModel):
     output_path: str = "reports/report.html"
     cs_metrics_path: str | None = None
     event_metrics_path: str | None = None
+    strict_inputs: bool = False
 
 
 def read_yaml(path: str | Path) -> dict[str, Any]:

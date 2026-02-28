@@ -46,6 +46,21 @@ class _ImmediateTaskRunner:
         return object(), _ImmediateSignals(result)
 
 
+class _ImmediateFailureSignals:
+    def __init__(self, error: str) -> None:
+        self.finished = _NoopSignal()
+        self.failed = _ImmediateSignal(error)
+
+
+class _ImmediateFailureTaskRunner:
+    def __init__(self, fn: Any) -> None:
+        self._fn = fn
+
+    def run(self, *args: Any, **kwargs: Any) -> tuple[object, _ImmediateFailureSignals]:
+        _ = (self._fn, args, kwargs)
+        return object(), _ImmediateFailureSignals("mocked-task-error")
+
+
 def _ensure_app() -> QApplication:
     return _APP
 
@@ -77,6 +92,91 @@ def test_data_manager_tab_runs_ingest_and_updates_preview_path(monkeypatch: Any)
     assert load_calls == ["ok"]
     assert done_calls
     assert "[DONE]" in tab.ingest_log.toPlainText()
+
+
+def test_data_manager_tab_cleans_runner_refs_after_repeated_ingest(monkeypatch: Any) -> None:
+    _ensure_app()
+    monkeypatch.setattr(gui_app, "TaskRunner", _ImmediateTaskRunner)
+    monkeypatch.setattr(
+        gui_app,
+        "run_ingest",
+        lambda config, output: {
+            "output_path": output,
+            "records_before": 12,
+            "records_after": 10,
+        },
+    )
+
+    tab = gui_app.DataManagerTab()
+    monkeypatch.setattr(tab, "_load", lambda: None)
+    monkeypatch.setattr(tab, "_handle_done", lambda message: None)
+
+    tab.ingest_config_input.setText("configs/data_source.yaml")
+    tab.ingest_output_input.setText("artifacts/from_gui.parquet")
+
+    for _ in range(6):
+        tab._run_ingest()
+
+    assert tab._active_runners == []
+
+
+def test_experiment_center_tab_reports_task_completion(monkeypatch: Any) -> None:
+    _ensure_app()
+    monkeypatch.setattr(gui_app, "TaskRunner", _ImmediateTaskRunner)
+    monkeypatch.setattr(
+        gui_app,
+        "run_cs_backtest",
+        lambda config: {"output_path": "artifacts/cs_metrics.json"},
+    )
+
+    tab = gui_app.ExperimentCenterTab()
+    done_calls: list[str] = []
+    monkeypatch.setattr(tab, "_handle_done", lambda message: done_calls.append(message))
+
+    tab.cs_config.setText("configs/backtest_cs.yaml")
+    tab._run_cs()
+
+    assert done_calls
+    assert "cs-backtest 完成" in done_calls[0]
+    assert "[DONE] cs-backtest" in tab.log.toPlainText()
+
+
+def test_signal_workshop_tab_reports_task_completion(monkeypatch: Any) -> None:
+    _ensure_app()
+    monkeypatch.setattr(gui_app, "TaskRunner", _ImmediateTaskRunner)
+    monkeypatch.setattr(
+        gui_app,
+        "run_signal_build",
+        lambda config: {"output_path": "artifacts/signal_scores.parquet", "config": config},
+    )
+
+    tab = gui_app.SignalWorkshopTab()
+    done_calls: list[str] = []
+    monkeypatch.setattr(tab, "_handle_done", lambda message: done_calls.append(message))
+    monkeypatch.setattr(tab, "_handle_error", lambda message: None)
+    tab.config_input.setText("configs/signal_build.yaml")
+
+    tab._run()
+
+    assert done_calls
+    assert "信号构建完成" in done_calls[0]
+    assert "[DONE]" in tab.log.toPlainText()
+
+
+def test_signal_workshop_tab_reports_task_failure(monkeypatch: Any) -> None:
+    _ensure_app()
+    monkeypatch.setattr(gui_app, "TaskRunner", _ImmediateFailureTaskRunner)
+
+    tab = gui_app.SignalWorkshopTab()
+    errors: list[str] = []
+    monkeypatch.setattr(tab, "_handle_error", lambda message: errors.append(message))
+    monkeypatch.setattr(tab, "_handle_done", lambda message: None)
+    tab.config_input.setText("configs/signal_build.yaml")
+
+    tab._run()
+
+    assert errors == ["mocked-task-error"]
+    assert "[ERROR] mocked-task-error" in tab.log.toPlainText()
 
 
 def test_evaluation_board_tab_runs_regression_gate(monkeypatch: Any) -> None:
@@ -117,3 +217,33 @@ def test_evaluation_board_tab_validates_threshold_input(monkeypatch: Any) -> Non
     tab._run_regression_gate()
 
     assert errors == ["阈值必须是数字"]
+
+
+def test_report_center_tab_updates_result_label_on_success(monkeypatch: Any) -> None:
+    _ensure_app()
+    monkeypatch.setattr(gui_app, "TaskRunner", _ImmediateTaskRunner)
+    monkeypatch.setattr(
+        gui_app,
+        "run_report",
+        lambda config: {"report_path": f"artifacts/report-{config}.md"},
+    )
+
+    tab = gui_app.ReportCenterTab()
+    tab.config_input.setText("configs/report.yaml")
+    tab._run()
+
+    assert "报告已生成: artifacts/report-configs/report.yaml.md" == tab.result_label.text()
+
+
+def test_report_center_tab_reports_task_failure(monkeypatch: Any) -> None:
+    _ensure_app()
+    monkeypatch.setattr(gui_app, "TaskRunner", _ImmediateFailureTaskRunner)
+
+    tab = gui_app.ReportCenterTab()
+    errors: list[str] = []
+    monkeypatch.setattr(tab, "_handle_error", lambda message: errors.append(message))
+    tab.config_input.setText("configs/report.yaml")
+    tab._run()
+
+    assert errors == ["mocked-task-error"]
+    assert tab.result_label.text() == "尚未生成报告"

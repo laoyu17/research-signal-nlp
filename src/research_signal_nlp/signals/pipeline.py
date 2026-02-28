@@ -60,19 +60,22 @@ def _load_ingested_records(path: str) -> pd.DataFrame:
         raise ValueError(f"Ingested records missing required columns: {sorted(missing)}")
 
     frame = records.copy()
-    if "trade_date" not in frame.columns:
+    if "trade_date" in frame.columns:
+        parsed_trade_date = pd.to_datetime(frame["trade_date"], errors="coerce")
+    else:
         if "publish_time" not in frame.columns:
             raise ValueError(
                 "Ingested records require trade_date, or publish_time for fallback conversion."
             )
-        publish_time = pd.to_datetime(frame["publish_time"], errors="coerce")
-        frame["trade_date"] = publish_time.dt.strftime("%Y-%m-%d")
-    missing_trade_dates = int(frame["trade_date"].isna().sum())
+        parsed_trade_date = pd.to_datetime(frame["publish_time"], errors="coerce")
+
+    missing_trade_dates = int(parsed_trade_date.isna().sum())
     if missing_trade_dates > 0:
         raise ValueError(
             "Ingested records contain invalid or missing trade_date values "
             f"(count={missing_trade_dates})."
         )
+    frame["trade_date"] = parsed_trade_date.dt.strftime("%Y-%m-%d")
     return frame
 
 

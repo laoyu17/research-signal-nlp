@@ -35,3 +35,5 @@
 - 单类标签训练场景应自动回退，不得中断信号构建
 - 事件窗口 CAR 口径固定为 `T+1...T+N`（不含事件当日）
 - 旧版配置（未声明 `events_output_path`/`debug_output_path`）必须继续可用
+- `ingested_records_path` 下 `trade_date` 必须严格可解析；混入非法日期应直接报错
+- 报告 `strict_inputs=true` 时，缺失输入文件或 payload 契约不合法应直接失败

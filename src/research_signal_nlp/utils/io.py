@@ -12,8 +12,18 @@ def ensure_parent(path: str | Path) -> None:
     Path(path).parent.mkdir(parents=True, exist_ok=True)
 
 
-def read_table(path: str | Path, fmt: str) -> pd.DataFrame:
-    if fmt == "csv":
+def _validate_table_format(fmt: str, source: str) -> str:
+    normalized = fmt.strip().lower()
+    if normalized in {"csv", "parquet"}:
+        return normalized
+    raise ValueError(
+        f"Unsupported table format '{fmt}' from {source}; allowed values: csv, parquet"
+    )
+
+
+def read_table(path: str | Path, fmt: str, source: str = "read_table") -> pd.DataFrame:
+    normalized_fmt = _validate_table_format(fmt, source)
+    if normalized_fmt == "csv":
         return pd.read_csv(path)
     return pd.read_parquet(path)
 
