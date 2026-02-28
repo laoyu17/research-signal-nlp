@@ -18,6 +18,13 @@ def _require_columns(frame: pd.DataFrame, required: list[str], frame_name: str) 
         raise ValueError(f"{frame_name} missing required columns: {missing}")
 
 
+def _trade_date_sort_key(trade_date: object) -> tuple[int, int | str]:
+    parsed = pd.to_datetime(trade_date, errors="coerce", utc=True)
+    if pd.isna(parsed):
+        return (1, str(trade_date))
+    return (0, int(parsed.value))
+
+
 @dataclass(slots=True)
 class CrossSectionEvaluator(BaseBacktestAdapter):
     quantiles: int = 5
@@ -61,7 +68,7 @@ class CrossSectionEvaluator(BaseBacktestAdapter):
 
         ic_rows = []
         quant_rows = []
-        top_sets: dict[str, set[str]] = {}
+        top_sets: dict[object, set[str]] = {}
 
         for trade_date, frame in merged.groupby("trade_date"):
             daily = frame.dropna(subset=["score", "fwd_return"]).copy()
@@ -91,7 +98,7 @@ class CrossSectionEvaluator(BaseBacktestAdapter):
             top_assets = set(
                 daily.loc[daily["bucket"] == daily["bucket"].max(), "asset"].astype(str)
             )
-            top_sets[str(trade_date)] = top_assets
+            top_sets[trade_date] = top_assets
 
         if not ic_rows:
             raise ValueError("No valid trading dates to evaluate cross-sectional metrics.")
@@ -104,7 +111,7 @@ class CrossSectionEvaluator(BaseBacktestAdapter):
         )
 
         turnovers = []
-        ordered_dates = sorted(top_sets.keys())
+        ordered_dates = sorted(top_sets.keys(), key=_trade_date_sort_key)
         for prev_date, curr_date in zip(ordered_dates, ordered_dates[1:], strict=False):
             prev_set, curr_set = top_sets[prev_date], top_sets[curr_date]
             union_size = len(prev_set | curr_set)
